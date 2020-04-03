@@ -43,7 +43,14 @@ import time
 
 import telegram
 from docopt import docopt
-from telegram.ext import CommandHandler, Updater, Filters, MessageHandler
+from telegram.ext import (
+    CommandHandler,
+    Updater,
+    Filters,
+    MessageHandler,
+    InlineQueryHandler,
+)
+from telegram import InlineQueryResultArticle, InputTextMessageContent
 
 
 class Bot:
@@ -77,11 +84,13 @@ class Bot:
         self.nanoy_handler = CommandHandler("vocabulaire", self.vocabulary)
         self.jmentape_handler = CommandHandler("insultes", self.insults)
         self.help_handler = CommandHandler("help", self.help)
+        self.inline_query_handler = InlineQueryHandler(self.inlinequery)
 
         self.dispatcher.add_handler(self.start_handler)
         self.dispatcher.add_handler(self.nanoy_handler)
         self.dispatcher.add_handler(self.jmentape_handler)
         self.dispatcher.add_handler(self.help_handler)
+        self.dispatcher.add_handler(self.inline_query_handler)
 
     def load_config(self):
         """Load configuration file. The configuration file is the config.ini file in code directory.
@@ -136,6 +145,38 @@ class Bot:
         context.bot.send_message(
             chat_id=update.effective_chat.id, text=resp.json()["msg"]
         )
+
+    def inlinequery(self, update, context):
+        """Inline reply
+        
+        Args:
+            update (dict): message that triggered the handler
+            context (CallbackContext): context
+        """
+        query = update.inline_query.query
+        vocabulary = requests.get(
+            url="https://haddock.nanoy.fr/api/vocabulaire"
+        ).json()["msg"]
+        insult = requests.get(url="https://haddock.nanoy.fr/api/insultes").json()["msg"]
+        vocabulary_result = InlineQueryResultArticle(
+            id=1,
+            title="Vocabulaire",
+            input_message_content=InputTextMessageContent(vocabulary),
+        )
+        insult_result = InlineQueryResultArticle(
+            id=2,
+            title="Insultes",
+            input_message_content=InputTextMessageContent(insult),
+        )
+        results = []
+        if query[0].lower() == "v":
+            results.append(vocabulary_result)
+        elif query[0].lower() == "i":
+            results.append(insult_result)
+        else:
+            results.append(vocabulary_result)
+            results.append(insult_result)
+        update.inline_query.answer(results)
 
     def help(self, update, context):
         """help command handler.
