@@ -40,6 +40,7 @@ import requests
 import sys
 import random
 import time
+import datetime
 
 import telegram
 from docopt import docopt
@@ -81,14 +82,16 @@ class Bot:
         self.dispatcher = self.updater.dispatcher
 
         self.start_handler = CommandHandler("start", self.start)
-        self.nanoy_handler = CommandHandler("vocabulaire", self.vocabulary)
-        self.jmentape_handler = CommandHandler("insultes", self.insults)
+        self.vocabulaire_handler = CommandHandler("vocabulaire", self.vocabulary)
+        self.insultes_handler = CommandHandler("insultes", self.insults)
+        self.whataweek_handler = CommandHandler("whataweek", self.whataweek)
         self.help_handler = CommandHandler("help", self.help)
         self.inline_query_handler = InlineQueryHandler(self.inlinequery)
 
         self.dispatcher.add_handler(self.start_handler)
-        self.dispatcher.add_handler(self.nanoy_handler)
-        self.dispatcher.add_handler(self.jmentape_handler)
+        self.dispatcher.add_handler(self.vocabulaire_handler)
+        self.dispatcher.add_handler(self.insultes_handler)
+        self.dispatcher.add_handler(self.whataweek_handler)
         self.dispatcher.add_handler(self.help_handler)
         self.dispatcher.add_handler(self.inline_query_handler)
 
@@ -145,6 +148,26 @@ class Bot:
         context.bot.send_message(
             chat_id=update.effective_chat.id, text=resp.json()["msg"]
         )
+
+    def whataweek(self, update, context):
+        """whataweek command handler
+        Send the tintin and haddock meme
+
+        Args:
+            update (dict): message that triggered the handler
+            context (CallbackContext): context
+        """
+        resp = requests.get(url="https://haddock.nanoy.fr/api/whataweek")
+        json = resp.json()
+        if json["msg"] == "ok":
+            context.bot.send_photo(
+                chat_id=update.effective_chat.id, photo=json["img"]
+            )
+        else:
+            context.bot.send_message(
+                chat_id=update.effective_chat.id, text="Nous sommes en week-end, moule à gauffres !"
+            )
+
 
     def inlinequery(self, update, context):
         """Inline reply
